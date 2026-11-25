@@ -105,14 +105,24 @@ public class SensitiveDataSanitizingFilter extends TurboFilter {
 
     private boolean containsSensitiveData(String message) {
         String lowerMessage = message.toLowerCase();
-        return lowerMessage.contains("password=")
-                || lowerMessage.contains("client_secret=")
-                || lowerMessage.contains("client_assertion=")
-                || lowerMessage.contains("refresh_token")
-                || lowerMessage.contains("access_token")
-                || lowerMessage.contains("id_token")
-                || lowerMessage.contains("authorization:")
-                || lowerMessage.contains("code=");
+        if (containsFormSecret(lowerMessage)) {
+            return true;
+        }
+        return containsTokenOrAuthorization(lowerMessage);
+    }
+
+    private boolean containsFormSecret(String lowerMessage) {
+        if (lowerMessage.contains("password=") || lowerMessage.contains("client_secret=")) {
+            return true;
+        }
+        return lowerMessage.contains("client_assertion=") || lowerMessage.contains("code=");
+    }
+
+    private boolean containsTokenOrAuthorization(String lowerMessage) {
+        if (lowerMessage.contains("refresh_token") || lowerMessage.contains("access_token")) {
+            return true;
+        }
+        return lowerMessage.contains("id_token") || lowerMessage.contains("authorization:");
     }
 
     private String sanitize(String message) {
