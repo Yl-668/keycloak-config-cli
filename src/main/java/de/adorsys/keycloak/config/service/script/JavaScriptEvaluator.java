@@ -49,36 +49,72 @@ public class JavaScriptEvaluator implements ScriptEvaluator {
     }
 
     private Object convertToValue(Value value) {
-        if (value.isNull()) {
-            return null;
-        } else if (value.isBoolean()) {
-            return value.asBoolean();
-        } else if (value.isNumber()) {
-            if (value.fitsInInt()) {
-                return value.asInt();
-            } else if (value.fitsInLong()) {
-                return value.asLong();
-            } else if (value.fitsInDouble()) {
-                return value.asDouble();
-            }
-        } else if (value.isString()) {
-            return value.asString();
-        } else if (value.isHostObject()) {
-            return value.asHostObject();
-        } else if (value.hasArrayElements()) {
-            // Copy into plain Java types, a polyglot proxy is unusable once the context is closed
-            List<Object> list = new ArrayList<>((int) value.getArraySize());
-            for (long i = 0; i < value.getArraySize(); i++) {
-                list.add(convertToValue(value.getArrayElement(i)));
-            }
-            return list;
-        } else if (value.hasMembers()) {
-            Map<String, Object> map = new LinkedHashMap<>();
-            for (String key : value.getMemberKeys()) {
-                map.put(key, convertToValue(value.getMember(key)));
-            }
-            return map;
+        if (isSimpleValue(value)) {
+            return convertSimpleValue(value);
+        }
+        if (value.hasArrayElements()) {
+            return convertArray(value);
+        }
+        if (value.hasMembers()) {
+            return convertObject(value);
         }
         return value.toString();
+    }
+
+    private boolean isSimpleValue(Value value) {
+        return value.isNull()
+                || value.isBoolean()
+                || value.isNumber()
+                || value.isString()
+                || value.isHostObject();
+    }
+
+    private Object convertSimpleValue(Value value) {
+        if (value.isNull()) {
+            return null;
+        }
+        if (value.isBoolean()) {
+            return value.asBoolean();
+        }
+        if (value.isNumber()) {
+            return convertNumber(value);
+        }
+        if (value.isString()) {
+            return value.asString();
+        }
+        if (value.isHostObject()) {
+            return value.asHostObject();
+        }
+        return value.toString();
+    }
+
+    private Object convertNumber(Value value) {
+        if (value.fitsInInt()) {
+            return value.asInt();
+        }
+        if (value.fitsInLong()) {
+            return value.asLong();
+        }
+        if (value.fitsInDouble()) {
+            return value.asDouble();
+        }
+        return value.toString();
+    }
+
+    private List<Object> convertArray(Value value) {
+        // Copy into plain Java types, a polyglot proxy is unusable once the context is closed
+        List<Object> list = new ArrayList<>((int) value.getArraySize());
+        for (long i = 0; i < value.getArraySize(); i++) {
+            list.add(convertToValue(value.getArrayElement(i)));
+        }
+        return list;
+    }
+
+    private Map<String, Object> convertObject(Value value) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (String key : value.getMemberKeys()) {
+            map.put(key, convertToValue(value.getMember(key)));
+        }
+        return map;
     }
 }
