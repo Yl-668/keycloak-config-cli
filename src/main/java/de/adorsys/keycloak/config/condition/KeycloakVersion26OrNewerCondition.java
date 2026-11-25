@@ -30,7 +30,9 @@ public class KeycloakVersion26OrNewerCondition implements Condition {
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         String version = context.getEnvironment().getProperty("keycloak.version");
-        if (version == null || version.isBlank() || version.equals("@keycloak.version@")) {
+        boolean versionMissingOrBlank = version == null || version.isBlank();
+        boolean unresolvedBuildVersion = "@keycloak.version@".equals(version);
+        if (versionMissingOrBlank || unresolvedBuildVersion) {
             return false;
         }
 
